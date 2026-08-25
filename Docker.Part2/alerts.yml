@@ -1,0 +1,11 @@
+groups:
+  - name: pushgateway_alerts
+    rules:
+      - alert: PushgatewayDown
+        expr: up{job="pushgateway"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 30 sec."

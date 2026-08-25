@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
   prometheus:
@@ -9,6 +9,7 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
     networks:
       sks-my-netology-hw:
         ipv4_address: 10.5.0.100
@@ -47,14 +48,34 @@ services:
       - prometheus
       - pushgateway
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: sks-netology-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      sks-my-netology-hw:
+        ipv4_address: 10.5.0.103
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    depends_on:
+      - prometheus
+
 volumes:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
 
 networks:
   sks-my-netology-hw:
+    name: sks-my-netology-hw
     driver: bridge
     ipam:
       config:
         - subnet: 10.5.0.0/16
-        - gateway: 10.5.0.1
+          gateway: 10.5.0.1
