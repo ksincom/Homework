@@ -1,0 +1,21 @@
+---
+- name: Install Tuned
+  hosts: my_Debian
+  become: yes  # Выполняем с правами root
+
+  tasks:
+    - name: Установить пакет tuned
+      ansible.builtin.apt:
+        name: tuned
+        state: present
+        update_cache: yes  # Обновить кэш пакетов перед установкой
+
+    - name: Запустить tuned как демон
+      ansible.builtin.systemd:
+        name: tuned
+        state: started
+
+    - name: Добавить tuned в автозагрузку
+      ansible.builtin.systemd:
+        name: tuned
+        enabled: yes

@@ -1,0 +1,44 @@
+---
+- name: Установить Apache
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+    update_cache: yes
+
+- name: Создать index.html из шаблона
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    mode: '0644'
+
+- name: Проверка конфигурации Apache
+  ansible.builtin.template:
+    src: apache.conf.j2
+    dest: /etc/apache2/sites-available/000-default.conf
+    mode: '0644'
+  notify: RestartApache
+
+- name: Запустить Apache и добавить в автозагрузку
+  ansible.builtin.systemd:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: Проверить доступность сайта извне
+  ansible.builtin.uri:
+    url: "http://{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}:80" 
+    status_code: 200
+    timeout: 5
+  register: website_check
+  delegate_to: localhost
+  ignore_errors: yes
+
+- name: Показать результат проверки
+  ansible.builtin.debug:
+    msg: "Сайт доступен, код ответа: {{ website_check.status }}"
+  when: website_check.status == 200
+
+- name: Предупреждение, если сайт недоступен
+  ansible.builtin.debug:
+    msg: "Сайт недоступен"
+  when: website_check.status != 200

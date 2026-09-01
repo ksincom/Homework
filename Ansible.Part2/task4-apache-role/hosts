@@ -1,0 +1,2 @@
+[my_Debian]
+10.10.1.229 ansible_user=ks ansible_connection=ssh

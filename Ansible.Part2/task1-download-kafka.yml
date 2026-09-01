@@ -1,0 +1,20 @@
+---
+- name: Download and extract source code Apache Kafka
+  hosts: my_Kafka
+
+  tasks:
+    - name: Download Kafka
+      ansible.builtin.get_url:
+        url: "https://dlcdn.apache.org/kafka/4.3.1/kafka-4.3.1-src.tgz"
+        dest: "{{ ansible_env.HOME }}/kafka-4.3.1-src.tgz"
+
+    - name: Make directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/kafka"
+        state: directory
+
+    - name: Unpack the archive
+      ansible.builtin.unarchive:
+        src: "{{ ansible_env.HOME }}/kafka-4.3.1-src.tgz"
+        dest: "{{ ansible_env.HOME }}/kafka"
+        remote_src: yes

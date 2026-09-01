@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Информация о сервере</title>
+</head>
+<body>
+    <h1>Информация о сервере</h1>
+    <ul>
+        <li><strong>CPU:</strong> {{ ansible_processor_cores }} ядер</li>
+        <li><strong>RAM:</strong> {{ ansible_memtotal_mb }} MB</li>
+        <li><strong>HDD:</strong> 
+            {% set first_disk = ansible_devices.keys() | first %}
+            {{ ansible_devices[first_disk].size }}
+        </li>
+        <li><strong>IP-адрес:</strong> {{ ansible_default_ipv4.address }} </li>
+    </ul>
+</body>
+</html>

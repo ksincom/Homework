@@ -1,0 +1,27 @@
+---
+- name: Установка и настройка веб-сервера Apache
+  hosts: my_Debian
+  become: yes
+
+  tasks:
+    - name: Установить пакет apache2
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Запустить apache2 и добавить в автозагрузку
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Проверить, что apache2 работает
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+      register: apache_status
+
+    - name: Показать статус apache2
+      ansible.builtin.debug:
+        msg: "Apache: {{ apache_status.status.ActiveState }}"

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+
+  template:
+    metadata:
+      labels:
+        app: redis
+
+    spec:
+      containers:
+      - name: master
+        image: bitnamilegacy/redis:6.0.13 #зафиксировали версию образа
+
+        env:
+         - name: REDIS_PASSWORD
+           value: "" #пустой пароль вместо password123
+         - name: ALLOW_EMPTY_PASSWORD
+           value: "yes"
+        ports:
+        - containerPort: 6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP

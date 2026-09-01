@@ -1,0 +1,7 @@
+---
+- name: Установка и настройка Apache
+  hosts: my_Debian
+  become: yes
+
+  roles:
+    - apache

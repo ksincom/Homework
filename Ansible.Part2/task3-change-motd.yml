@@ -1,0 +1,18 @@
+---
+- name: Изменить приветствие системы (MOTD)
+  hosts: my_Debian
+  become: yes
+
+  vars:
+    motd_message: |
+      ***********************************************
+       Приветсвую тебя на сервере {{ ansible_hostname }} 
+       с IP адресом: {{ ansible_default_ipv4.address }}
+       Желаю тебе хорошего для системный администратор   
+      ***********************************************
+
+  tasks:
+    - name: Записать приветствие в файл /etc/motd
+      ansible.builtin.copy:
+        content: "{{ motd_message }}"
+        dest: /etc/motd
