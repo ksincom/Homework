@@ -1,0 +1,185 @@
+---
+- name: Установка Nginx на веб-серверы (backend)
+  hosts: webservers
+  become: yes
+  gather_facts: yes
+
+
+  tasks:
+    - name: Обновление кэша пакетов apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Установка Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Настройка charset UTF-8 в nginx
+      lineinfile:
+        path: /etc/nginx/nginx.conf
+        insertafter: "http {"
+        line: "    charset utf-8;"
+      notify: restart nginx
+
+    - name: Запуск и включение Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Создание index.html для web-a
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="UTF-8">
+              <title>Веб-сервер web-a</title>
+          </head>
+          <body>
+              <h1 style="color: blue;">Веб-сервер web-a</h1>
+              <p><strong>Зона:</strong> ru-central1-a</p>
+              <p><strong>Внутренний IP:</strong> {{ ansible_default_ipv4.address }}</p>
+              <p><strong>Хост:</strong> {{ inventory_hostname }}</p>
+              <hr>
+              <p>Доступ через reverse proxy на бастионе</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+      when: inventory_hostname == "web-a"
+
+    - name: Создание index.html для web-b
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="UTF-8">
+              <title>Веб-сервер web-b</title>
+          </head>
+          <body>
+              <h1 style="color: green;">Веб-сервер web-b</h1>
+              <p><strong>Зона:</strong> ru-central1-b</p>
+              <p><strong>Внутренний IP:</strong> {{ ansible_default_ipv4.address }}</p>
+              <p><strong>Хост:</strong> {{ inventory_hostname }}</p>
+              <hr>
+              <p>Доступ через reverse proxy на бастионе</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+      when: inventory_hostname == "web-b"
+
+    - name: Проверка работы Nginx
+      uri:
+        url: http://localhost
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 3
+      delay: 5
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+- name: Настройка Nginx как reverse proxy на бастионе
+  hosts: bastion
+  become: yes
+  gather_facts: yes
+
+  vars:
+    web_a_ip: "{{ hostvars['web-a']['ansible_default_ipv4']['address'] }}"
+    web_b_ip: "{{ hostvars['web-b']['ansible_default_ipv4']['address'] }}"
+
+  tasks:
+    - name: Установка Nginx на бастион
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Создание конфигурации reverse proxy
+      template:
+        src: reverse_proxy.conf.j2
+        dest: /etc/nginx/sites-available/default
+        mode: '0644'
+
+    - name: Удаление дефолтного конфига (если есть)
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      ignore_errors: yes
+
+    - name: Включение сайта
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+
+    - name: Проверка конфигурации Nginx
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Перезапуск Nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+      when: nginx_test.rc == 0
+
+    - name: Проверка доступности web-a через reverse proxy
+      uri:
+        url: "http://localhost/web-a/"
+        status_code: 200
+      register: result_a
+      until: result_a.status == 200
+      retries: 5
+      delay: 3
+
+    - name: Проверка доступности web-b через reverse proxy
+      uri:
+        url: "http://localhost/web-b/"
+        status_code: 200
+      register: result_b
+      until: result_b.status == 200
+      retries: 5
+      delay: 3
+
+    - name: Вывод информации
+      debug:
+        msg: |
+          Reverse proxy настроен успешно!
+          ============================================
+          Доступ к веб-серверам через бастион:
+          - web-a: http://{{ ansible_default_ipv4.address }}/web-a/
+          - web-b: http://{{ ansible_default_ipv4.address }}/web-b/
+          ============================================
+
+    - name: Сохранение информации в файл
+      copy:
+        content: |
+          Reverse proxy на бастионе {{ ansible_default_ipv4.address }}
+          ============================================================
+          Доступные веб-серверы:
+          
+          1. web-a (зона ru-central1-a)
+             URL: http://{{ ansible_default_ipv4.address }}/web-a/
+             Backend: http://{{ web_a_ip }}:80
+          
+          2. web-b (зона ru-central1-b)
+             URL: http://{{ ansible_default_ipv4.address }}/web-b/
+             Backend: http://{{ web_b_ip }}:80
+          
+          ============================================================
+          Для проверки выполните:
+          curl http://{{ ansible_default_ipv4.address }}/web-a/
+          curl http://{{ ansible_default_ipv4.address }}/web-b/
+        dest: /home/ks/reverse_proxy_info.txt
+        owner: ks
+        group: ks
+        mode: '0644'

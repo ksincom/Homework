@@ -1,0 +1,75 @@
+# Local .terraform directories and files
+**/.terraform/*
+.terraform*
+!.terraformrc
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Terraform variable files
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ansible files
+*.retry
+*.log
+hosts.ini
+inventory.ini
+*.inventory
+
+# Cloud-init (содержит SSH ключи!)
+cloud-init.yml
+cloud-init.yaml
+user-data.yml
+user-data.yaml
+
+# SSH keys
+*.pem
+*.ppk
+*.key
+id_*
+*.pub
+
+# Environment variables
+.env
+*.secret
+secrets.yml
+secrets.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Output files
+output.json
+output.yaml
